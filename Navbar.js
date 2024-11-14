@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AppBar, Toolbar, Typography, Button, Container, Avatar, Menu, MenuItem, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import { Link } from 'react-router-dom';
-import logo from './logo.jpeg'; // Replace with the actual path to your logo image
+import logo from '../assets/back.jpg'; // Replace with the actual path to your logo image
 
 // Custom hook to manage media permissions (camera, microphone)
 const useMediaStream = () => {

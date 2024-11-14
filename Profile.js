@@ -1,24 +1,38 @@
-import React from 'react';
-import { Avatar, Typography, Button, Paper, Box, Grid } from '@mui/material';
+import React, { useState } from 'react';
+import { Avatar, Typography, Button, Paper, Box, Grid, TextField } from '@mui/material';
 import { deepPurple } from '@mui/material/colors';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const Profile = ({ user }) => {
   const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editableUser, setEditableUser] = useState(user || {});
 
-  // Handle Edit Profile Button
+  // Toggle edit mode
   const handleEditProfile = () => {
-    navigate('/edit-profile');
+    setIsEditing(!isEditing);
   };
 
-  // Handle Logout Button
-  const handleLogout = () => {
-    // Your logout logic here (e.g., clearing auth tokens, signing out from Firebase)
-    navigate('/');  // Redirect to the login page after logging out
-  }
+  // Handle profile field changes
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setEditableUser({ ...editableUser, [name]: value });
+  };
 
-  // Example data for the progress graph (replace with actual user data)
+  // Save changes
+  const handleSaveChanges = () => {
+    // Logic to save changes to the database or backend
+    setIsEditing(false);
+  };
+
+  // Handle Logout
+  const handleLogout = () => {
+    // Your logout logic here
+    navigate('/');
+  };
+
+  // Example data for progress graph
   const data = [
     { month: 'Jan', earnings: 50 },
     { month: 'Feb', earnings: 80 },
@@ -29,132 +43,114 @@ const Profile = ({ user }) => {
 
   return (
     <Box sx={{ width: '100%', padding: '20px', backgroundColor: '#f0f4f8' }}>
-      {/* Main Container to Center Content */}
       <Paper
-        className="p-8 mx-auto my-10 shadow-lg rounded-xl"
-        style={{ backgroundColor: '#fff', width: '100%', maxWidth: '1200px' }}  // Ensures content is centered and doesn't stretch too much
+        style={{ backgroundColor: '#fff', width: '100%', maxWidth: '1200px', margin: 'auto', padding: '20px' }}
       >
         <Grid container spacing={4}>
-          {/* Left Column (Avatar, Name, Email, Edit and Logout Buttons) */}
+          {/* Left Column */}
           <Grid item xs={12} sm={4}>
             <div className="flex flex-col items-center gap-4">
-              {/* Profile Avatar */}
-              <Avatar sx={{ bgcolor: deepPurple[500], width: 100, height: 100 }} alt={user?.name || 'User Name'}>
-                {user?.name ? user.name.charAt(0) : 'U'}
+              <Avatar sx={{ bgcolor: deepPurple[500], width: 100, height: 100 }} alt={editableUser.name || 'User'}>
+                {editableUser.name ? editableUser.name.charAt(0) : 'U'}
               </Avatar>
 
-              {/* User Name */}
-              <Typography variant="h4" className="font-semibold">
-                {user?.name || 'User Name'}
-              </Typography>
+              {/* Display or Edit User Name */}
+              {isEditing ? (
+                <TextField
+                  label="Name"
+                  variant="outlined"
+                  name="name"
+                  value={editableUser.name || ''}
+                  onChange={handleChange}
+                  fullWidth
+                />
+              ) : (
+                <Typography variant="h4" className="font-semibold">
+                  {editableUser.name || 'User Name'}
+                </Typography>
+              )}
 
-              {/* User Email */}
-              <Typography variant="body1" color="textSecondary">
-                {user?.email || 'user@example.com'}
-              </Typography>
+              {/* Display or Edit User Email */}
+              {isEditing ? (
+                <TextField
+                  label="Email"
+                  variant="outlined"
+                  name="email"
+                  value={editableUser.email || ''}
+                  onChange={handleChange}
+                  fullWidth
+                />
+              ) : (
+                <Typography variant="body1" color="textSecondary">
+                  {editableUser.email || 'user@example.com'}
+                </Typography>
+              )}
 
-              {/* Edit Profile Button */}
+              {/* Toggle Edit and Save Buttons */}
               <Button
                 variant="contained"
                 color="primary"
-                className="mt-4"
-                onClick={handleEditProfile}
+                onClick={isEditing ? handleSaveChanges : handleEditProfile}
                 sx={{
-                  backgroundColor: '#388e3c',  // Green color for eco-friendly theme
-                  '&:hover': {
-                    backgroundColor: '#2e7d32', // Darker green on hover
-                  },
+                  backgroundColor: isEditing ? '#388e3c' : '#1976d2',
+                  '&:hover': { backgroundColor: isEditing ? '#2e7d32' : '#1565c0' },
+                  mt: 2,
                 }}
               >
-                Edit Profile
+                {isEditing ? 'Save Changes' : 'Edit Profile'}
               </Button>
 
               {/* Logout Button */}
               <Button
                 variant="contained"
                 color="secondary"
-                className="mt-4"
                 onClick={handleLogout}
-                sx={{
-                  backgroundColor: '#f44336', // Red color for logout
-                  '&:hover': {
-                    backgroundColor: '#d32f2f', // Darker red on hover
-                  },
-                }}
+                sx={{ backgroundColor: '#f44336', '&:hover': { backgroundColor: '#d32f2f' }, mt: 2 }}
               >
                 Logout
               </Button>
             </div>
           </Grid>
 
-          {/* Right Column (About Me, Credits, Reels Earnings, Progress Graph) */}
+          {/* Right Column */}
           <Grid item xs={12} sm={8}>
             <div className="flex flex-col gap-4">
               {/* About Me Section */}
-              <div className="mt-8">
-                <Typography variant="h6" className="mb-2">
-                  About Me
-                </Typography>
+              <Typography variant="h6">About Me</Typography>
+              {isEditing ? (
+                <TextField
+                  label="Bio"
+                  variant="outlined"
+                  name="bio"
+                  value={editableUser.bio || ''}
+                  onChange={handleChange}
+                  fullWidth
+                  multiline
+                />
+              ) : (
                 <Typography variant="body2" color="textSecondary">
-                  A short bio about the user. This section can include interests, hobbies, or an environmental mission statement.
+                  {editableUser.bio || 'A short bio about the user.'}
                 </Typography>
-              </div>
+              )}
 
-              {/* Credits and Earned Coins Section */}
+              {/* Credits & Rewards */}
               <Box sx={{ mt: 4, backgroundColor: '#d9f7d9', padding: 2, borderRadius: 2 }}>
-                <Typography variant="h6" className="mb-2" sx={{ fontWeight: '600', color: '#388e3c' }}>
-                  Credits & Rewards
-                </Typography>
-
-                {/* Display Credits */}
-                <Typography variant="body1">
-                  <strong>Credits:</strong> {user?.credits || 0}
-                </Typography>
-
-                {/* Display Earned Coins */}
-                <Typography variant="body1" sx={{ mb: 2 }}>
-                  <strong>Earned Coins:</strong> {user?.earnedCoins || 0}
-                </Typography>
-
-                {/* Redeem Button */}
-                <Button
-                  variant="contained"
-                  color="success"
-                  sx={{
-                    backgroundColor: '#388e3c',  // Green button for redeem
-                    '&:hover': {
-                      backgroundColor: '#2e7d32', // Darker green on hover
-                    },
-                  }}
-                >
-                  Redeem Rewards
-                </Button>
+                <Typography variant="h6" sx={{ fontWeight: '600', color: '#388e3c' }}>Credits & Rewards</Typography>
+                <Typography variant="body1"><strong>Credits:</strong> {editableUser.credits || 0}</Typography>
+                <Typography variant="body1" sx={{ mb: 2 }}><strong>Earned Coins:</strong> {editableUser.earnedCoins || 0}</Typography>
+                <Button variant="contained" color="success" sx={{ backgroundColor: '#388e3c', '&:hover': { backgroundColor: '#2e7d32' } }}>Redeem Rewards</Button>
               </Box>
 
-              {/* Reels Earnings Section */}
+              {/* Reels Earnings */}
               <Box sx={{ mt: 4, backgroundColor: '#f1f8e9', padding: 2, borderRadius: 2 }}>
-                <Typography variant="h6" sx={{ fontWeight: '600', color: '#388e3c' }}>
-                  My Reels Earnings
-                </Typography>
-
-                {/* Display Earnings */}
-                <Typography variant="body1" sx={{ mb: 2 }}>
-                  <strong>Total Earnings from Reels:</strong> {user?.reelsEarnings || 0} coins
-                </Typography>
-
-                {/* Show Reels Uploaded */}
-                <Typography variant="body1" sx={{ mb: 2 }}>
-                  <strong>Reels Uploaded:</strong> {user?.reelsCount || 0}
-                </Typography>
+                <Typography variant="h6" sx={{ fontWeight: '600', color: '#388e3c' }}>My Reels Earnings</Typography>
+                <Typography variant="body1" sx={{ mb: 2 }}><strong>Total Earnings from Reels:</strong> {editableUser.reelsEarnings || 0} coins</Typography>
+                <Typography variant="body1" sx={{ mb: 2 }}><strong>Reels Uploaded:</strong> {editableUser.reelsCount || 0}</Typography>
               </Box>
 
               {/* Reels Progress Graph */}
               <Box sx={{ mt: 4 }}>
-                <Typography variant="h6" sx={{ fontWeight: '600', color: '#388e3c' }}>
-                  Reels Progress (Earnings Over Time)
-                </Typography>
-
-                {/* Progress Graph */}
+                <Typography variant="h6" sx={{ fontWeight: '600', color: '#388e3c' }}>Reels Progress (Earnings Over Time)</Typography>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" />
