@@ -1,33 +1,67 @@
-import React from 'react';
-import { Card, CardContent, Grid, Typography, Button, Box, Avatar, Paper } from '@mui/material';
+import React, { useState } from 'react';
+import { Card, CardContent, Grid, Typography, Button, Box, Avatar, Paper, Dialog, DialogContent } from '@mui/material';
 import { green, blue, orange, purple } from '@mui/material/colors';
 
 function Dashboard() {
+  const [openDialog, setOpenDialog] = useState(false);
+  const healthScore = 85; // Example health score value
+
+  const handleOpenDialog = () => {
+    setOpenDialog(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+  };
+
   return (
     <Box sx={{ mt: 5, px: 3, backgroundColor: '#f7fafc' }}>
       <Typography variant="h4" gutterBottom color="primary" sx={{ fontWeight: 600 }}>
         Dashboard
       </Typography>
 
+      {/* Congratulatory Dialog */}
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+  <DialogContent>
+    <Typography variant="h6" color="primary" sx={{ fontWeight: 600, textAlign: 'center' }}>
+      Congratulations!
+    </Typography>
+    <Typography variant="body1" sx={{ mt: 1, textAlign: 'center' }}>
+      Your Environmental Health Score is excellent at {healthScore}%! Keep up the great work!
+    </Typography>
+    
+    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+      <Button variant="contained" color="secondary">
+        Claim your reward
+      </Button>
+    </Box>
+  </DialogContent>
+</Dialog>
+
+
       <Grid container spacing={3}>
         {/* Environmental Health Score Card */}
         <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{
-            minHeight: 200, 
-            borderRadius: 3, 
-            boxShadow: 3, 
-            background: 'linear-gradient(135deg, #a8e063, #56ab2f)',
-            transition: 'transform 0.3s ease-in-out',
-            '&:hover': {
-              transform: 'scale(1.05)',
-            }
-          }}>
+          <Card
+            onClick={handleOpenDialog}
+            sx={{
+              minHeight: 200,
+              borderRadius: 3,
+              boxShadow: 3,
+              background: 'linear-gradient(135deg, #a8e063, #56ab2f)',
+              transition: 'transform 0.3s ease-in-out',
+              '&:hover': {
+                transform: 'scale(1.05)',
+                cursor: 'pointer',
+              },
+            }}
+          >
             <CardContent>
               <Typography variant="h5" component="div" color="text.primary">
                 Environmental Health Score
               </Typography>
               <Typography variant="h6" component="div" color="text.primary" sx={{ fontWeight: 700 }}>
-                85% – Excellent
+                {healthScore}% – Excellent
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 A thriving environment with minimal pollution and healthy ecosystem.

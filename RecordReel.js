@@ -1,9 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Box, Button, Typography } from '@mui/material';
-import { getAuth } from 'firebase/auth';
-import { getStorage, ref, uploadBytesResumable } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import { getDatabase, ref as dbRef, set } from 'firebase/database';
-import { app } from '../firebase';  // Your Firebase app initialization file
+import { auth, db, storage } from '../firebase'; // Import Firebase services
 
 function RecordReel() {
   const [mediaStream, setMediaStream] = useState(null);
@@ -13,7 +12,6 @@ function RecordReel() {
   const videoRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const chunks = useRef([]);
-  const [uploadProgress, setUploadProgress] = useState(0);  // For upload progress feedback
 
   const checkPermission = async () => {
     try {
@@ -61,53 +59,59 @@ function RecordReel() {
     }
   };
 
-  // Handle video upload to Firebase
   const uploadVideo = async () => {
-    if (!videoURL) return;
-
-    const user = getAuth(app).currentUser;
-    if (!user) {
-      alert('You must be logged in to upload a video');
+    if (!videoURL || !auth.currentUser) {
+      console.error('No video or user not authenticated');
       return;
     }
 
-    const storage = getStorage(app);
-    const storageRef = ref(storage, `reels/${user.uid}/${Date.now()}.mp4`);
-    const videoBlob = await fetch(videoURL).then((res) => res.blob());
+    try {
+      const videoBlob = await fetch(videoURL).then(res => res.blob());
+      const storageRef = ref(storage, `reels/${auth.currentUser.uid}/${Date.now()}.mp4`);
+      const uploadTask = uploadBytesResumable(storageRef, videoBlob);
 
-    const uploadTask = uploadBytesResumable(storageRef, videoBlob);
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          // Track upload progress
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log('Upload is ' + progress + '% done');
+        },
+        (error) => {
+          console.error('Error uploading video:', error);
+        },
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
 
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setUploadProgress(progress);
-      },
-      (error) => {
-        console.error('Error uploading video:', error);
-        alert('Upload failed!');
-      },
-      () => {
-        alert('Upload successful!');
-        setUploadProgress(0);
-        saveVideoInfoToDatabase(uploadTask.snapshot.metadata.fullPath);
-      }
-    );
+          // Save video metadata to Realtime Database
+          const videoData = {
+            userId: auth.currentUser.uid,
+            videoURL: downloadURL,
+            timestamp: new Date().toISOString(),
+          };
+
+          const videoRefInDb = dbRef(db, 'reels/' + auth.currentUser.uid + '/' + Date.now());
+          await set(videoRefInDb, videoData);
+
+          console.log('Video uploaded and metadata saved successfully!');
+          alert('Video uploaded and saved successfully!');
+        }
+      );
+    } catch (error) {
+      console.error('Error uploading video:', error);
+    }
   };
 
-  // Save video info to Realtime Database under the logged-in user
-  const saveVideoInfoToDatabase = (filePath) => {
-    const user = getAuth(app).currentUser;
-    const db = getDatabase(app);
-    const videoRefPath = dbRef(db, 'users/' + user.uid + '/reels/' + Date.now());
-    set(videoRefPath, {
-      videoPath: filePath,
-      uploadTimestamp: Date.now(),
-    }).then(() => {
-      console.log('Video info saved to database');
-    }).catch((error) => {
-      console.error('Error saving video info:', error);
-    });
+  const resetRecording = () => {
+    setVideoURL(null);
+    setRecording(false);
+    setMediaStream(null);
+    chunks.current = [];
+  };
+
+  const cancelUpload = () => {
+    resetRecording();
+    setPermissionDenied(false);
   };
 
   return (
@@ -143,17 +147,27 @@ function RecordReel() {
         )}
       </Box>
 
-      {videoURL && (
+      {videoURL && !recording && (
         <Box sx={{ mt: 2 }}>
-          <Button variant="contained" color="success" onClick={uploadVideo}>
-            Confirm Upload
+          <Button variant="outlined" color="error" onClick={resetRecording}>
+            Reset Video
           </Button>
         </Box>
       )}
 
-      {uploadProgress > 0 && (
+      {videoURL && !recording && (
         <Box sx={{ mt: 2 }}>
-          <Typography variant="body1">Uploading: {Math.round(uploadProgress)}%</Typography>
+          <Button variant="outlined" color="error" onClick={cancelUpload}>
+            Cancel Upload
+          </Button>
+        </Box>
+      )}
+
+      {videoURL && !recording && (
+        <Box sx={{ mt: 2 }}>
+          <Button variant="contained" color="success" onClick={uploadVideo}>
+            Confirm Upload
+          </Button>
         </Box>
       )}
     </Box>
